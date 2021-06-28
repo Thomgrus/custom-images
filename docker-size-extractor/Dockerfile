@@ -1,0 +1,11 @@
+FROM python
+
+WORKDIR /usr/src/app
+
+COPY requirements.txt .
+
+RUN pip3 install -r requirements.txt
+
+COPY docker-size-extractor .
+
+ENTRYPOINT ["/usr/local/bin/python3", "./docker-size-extractor"]
