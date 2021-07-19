@@ -1,4 +1,4 @@
-#!/usr/local/bin/bash
+#!bash
 
 helpFunction()
 {
@@ -40,11 +40,11 @@ case $key in
     shift # past argument
     ;;
     -w|--write)
-    write='YES'
+    push='YES'
     shift # past argument
     ;;
     -r|--read)
-    read='YES'
+    pull='YES'
     shift # past argument
     ;;
     *)    # unknown option
@@ -60,7 +60,7 @@ fi
 
 echo "FETCH USERS for REPO $owner/$repository"
 
-LAST_PAGE=$(curl -s -I -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/$owner/$repository/collaborators?per_page=100&page=1" | grep Link: | sed 's/.*per_page=100&page=//g' | sed 's/>.*//g')
+LAST_PAGE=$(curl -s -I -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/$owner/$repository/collaborators?per_page=100&page=1" | grep link: | sed 's/.*per_page=100&page=//g' | sed 's/>.*//g')
 
 if [[ $admin == 'YES' ]]; then echo -n '' > admin.list; fi
 if [[ $push == 'YES' ]]; then echo -n '' > push.list; fi
