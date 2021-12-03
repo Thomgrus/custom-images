@@ -1,0 +1,16 @@
+# Start by building the application.
+FROM golang:1.17-buster as build
+
+WORKDIR /go/src/app
+ADD . /go/src/app
+
+RUN go get -d -v ./...
+
+RUN go build -o /go/bin/app
+
+# Now copy it into our base image.
+FROM gcr.io/distroless/base-debian10
+# This container exposes port 8080 to the outside world
+EXPOSE 8080
+COPY --from=build /go/bin/app /
+CMD ["/app"]
