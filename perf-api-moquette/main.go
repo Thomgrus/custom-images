@@ -4,6 +4,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/dktunited/perf-api-moquette/controllers"
 )
 
 func getPort() string {
@@ -15,6 +17,7 @@ func getPort() string {
 }
 
 func main() {
+	controllers.InitCache()
 	router := InitializeRouter()
 
 	// Listen

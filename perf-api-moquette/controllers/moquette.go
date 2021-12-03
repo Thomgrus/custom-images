@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 )
 
 // GetCartBody : model for a patient
@@ -19,8 +20,21 @@ type GetCartResponse struct {
 	Quantity     int       `json:"quantity"`
 }
 
-func callApi(c chan ApiResponse, path string) {
-	response, err := http.Get("https://moquette.rbillon.ovh/" + path)
+func getenv(key, fallback string) string {
+	value := os.Getenv(key)
+	if len(value) == 0 {
+		return fallback
+	}
+	return value
+}
+
+var API_DELIVERY = getenv("API_DELIVERY", "https://moquette.rbillon.ovh/delivery")
+var API_STOCK = getenv("API_STOCK", "https://moquette.rbillon.ovh/stock")
+var API_WISHLIST = getenv("API_WISHLIST", "https://moquette.rbillon.ovh/wishlist")
+var API_PRICE = getenv("API_PRICE", "https://moquette.rbillon.ovh/price")
+
+func callApi(c chan ApiResponse, endpoint string) {
+	response, err := http.Get(endpoint)
 	if err != nil {
 		log.Println(err)
 	}
@@ -62,10 +76,10 @@ func GetCart(w http.ResponseWriter, r *http.Request) {
 	stockChan := make(chan ApiResponse)
 	wishlistChan := make(chan ApiResponse)
 
-	go callApi(priceChan, "price")
-	go callApi(deliveryChan, "delivery")
-	go callApi(stockChan, "stock")
-	go callApi(wishlistChan, "wishlist")
+	go callApi(priceChan, API_PRICE)
+	go callApi(deliveryChan, API_DELIVERY)
+	go callApi(stockChan, API_STOCK)
+	go callApi(wishlistChan, API_WISHLIST)
 
 	var response GetCartResponse = GetCartResponse{
 		PriceTTC:     float32((<-priceChan).Data[0].Attributes.Price*getCartBody.Number) * 1.2,
