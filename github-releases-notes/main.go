@@ -12,7 +12,8 @@ func main() {
 	githubRepo := flag.String("repo", "", "Github repo name")
 	baseTag := flag.String("base", "", "Github base tag")
 	headTag := flag.String("head", "", "Github head tag")
-	ignoreMerge := flag.Bool("im", true, "Ignore merge commit in changelog, default true")
+	ignoreMerge := flag.Bool("im", false, "Ignore merge commit in changelog, default false")
+	csvMode := flag.Bool("csv", false, "CSV changelog, default false")
 
 	flag.Parse()
 
@@ -28,4 +29,7 @@ func main() {
 
 	releaseInfo := GetReleaseInfo(compareInfo, githubToken)
 	ExportChangelog(releaseInfo)
+	if *csvMode {
+		ExportChangelogCSV(releaseInfo)
+	}
 }
