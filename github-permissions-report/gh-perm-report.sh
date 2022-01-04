@@ -1,4 +1,4 @@
-#!bash
+#!/usr/local/bin/bash
 
 helpFunction()
 {

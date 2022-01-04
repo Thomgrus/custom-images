@@ -1,4 +1,4 @@
-FROM bash:5.1.4
-RUN apk --no-cache add curl
-COPY gh-perm-report.sh /github-permissions-report
-ENTRYPOINT ["/github-permissions-report"]
+FROM bash:5
+RUN apk --no-cache add curl jq
+COPY gh-perm-report.sh /usr/local/bin/github-permissions-report
+ENTRYPOINT ["github-permissions-report"]
