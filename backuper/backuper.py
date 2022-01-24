@@ -53,6 +53,7 @@ def ftp_restore(args, metadata):
             print("Error: %s - %s." % (e.filename, e.strerror))
         uncompress_tarfile(last_backup, Path(os.path.join(args.target)).parent.absolute())
         print(f'✅ Backup restored')
+        os.remove(last_backup)
 
 def local_restore(args, metadata):
     l = os.listdir(args.backup_path)
@@ -68,7 +69,6 @@ def local_restore(args, metadata):
             print("Error: %s - %s." % (e.filename, e.strerror))
         uncompress_tarfile(os.path.join(args.backup_path, last_backup), Path(os.path.join(args.target)).parent.absolute())
         print(f'✅ Backup restored')
-        os.remove(last_backup)
 
 def restore(args):
     metadata = process_metadata(args.target)
