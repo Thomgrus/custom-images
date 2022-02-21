@@ -1,11 +1,16 @@
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
+from crypt import methods
 import datetime
+import json
 from zipfile import ZipFile
 import pytz
 import requests
 import os
 import xml.etree.ElementTree as ET
 import locale
+from flask import Flask, request
+
+app = Flask(__name__)
 
 SOURCE_PROGRAMME = 'https://xmltv.ch/xmltv/xmltv-tnt.zip'
 
@@ -154,14 +159,35 @@ def fetch_program(args):
     today_program = process_xmltv()
     send_today_program(args, today_program)
 
+@app.route('/send', methods=['GET'])
+def send_program():
+    args = Namespace(
+        force_refresh=bool(request.args.get('force', 'False')),
+        webhook=os.getenv('PROGRAMME_TNT_SLACK_WEBHOOK'),
+        verbose=bool(os.getenv('PROGRAMME_TNT_VERBOSE'))
+    )
+    fetch_program(args)
+    return json.dumps({'success': True})
+
+def server_program(args):
+    os.environ['PROGRAMME_TNT_SLACK_WEBHOOK'] = args.webhook
+    os.environ['PROGRAMME_TNT_VERBOSE'] = str(args.verbose)
+    app.run()
 
 
 parser = ArgumentParser(prog='programme-tnt')
+subparsers = parser.add_subparsers(title='subcommands', help='target goal for programme', required=True)
 
-parser.add_argument('-f', '--force-refresh', help="Force the refresh of programme tv database", action="store_true", default=False)
-parser.add_argument('-w', '--webhook', help="Slack webhook to send program. Default env SLACK_WEBHOOK", default=os.getenv('SLACK_WEBHOOK'))
-parser.add_argument('-v', '--verbose', help="Display many information like description", action="store_true", default=False)
-parser.set_defaults(func=fetch_program)
+cli_parser = subparsers.add_parser('cli', help='cli version of programme-tnt')
+cli_parser.add_argument('-f', '--force-refresh', help="Force the refresh of programme tv database", action="store_true", default=False)
+cli_parser.add_argument('-w', '--webhook', help="Slack webhook to send program. Default env SLACK_WEBHOOK", default=os.getenv('SLACK_WEBHOOK'))
+cli_parser.add_argument('-v', '--verbose', help="Display many information like description", action="store_true", default=False)
+cli_parser.set_defaults(func=fetch_program)
+
+server_parser = subparsers.add_parser('server', help='server version of programme-tnt')
+server_parser.add_argument('-w', '--webhook', help="Slack webhook to send program. Default env SLACK_WEBHOOK", default=os.getenv('SLACK_WEBHOOK'))
+server_parser.add_argument('-v', '--verbose', help="Display many information like description", action="store_true", default=False)
+server_parser.set_defaults(func=server_program)
 
 def main(args):
     '''Backuper allows you to backup / restore a path'''
