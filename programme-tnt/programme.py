@@ -146,6 +146,8 @@ def to_blocks(today_program, verbose):
 def send_today_program(args, today_program):
     r = requests.post(args.webhook, json={
         'text': 'Programme TV du jour',
+        'username': 'Programme TNT',
+        'icon_emoji': ':tv:',
         'blocks': to_blocks(today_program, args.verbose)
         })
     if r.status_code == 200:
