@@ -16,19 +16,19 @@ SOURCE_PROGRAMME = 'https://xmltv.ch/xmltv/xmltv-tnt.zip'
 
 NOW = pytz.timezone('Europe/Paris').localize(datetime.datetime.now())
 DATETIME_FORMAT = "%Y%m%d%H%M%S %z"
-TARGET_CHANNELS = [
-    'C192.api.telerama.fr', # TF1
-    'C4.api.telerama.fr', # France 2
-    'C118.api.telerama.fr', # M6
-    #'C445.api.telerama.fr', # C8
-    #'C119.api.telerama.fr', # W9
-    #'C195.api.telerama.fr', # TMC
-    #'C446.api.telerama.fr', # TFX
-    #'C444.api.telerama.fr', # NRJ 12
-    #'C482.api.telerama.fr', # Gulli
-    #'C1404.api.telerama.fr', # TF1 Serie Film
-    #'C1403.api.telerama.fr', # 6Ter
-]
+TARGET_CHANNELS = {
+    'tf1': 'C192.api.telerama.fr', # TF1
+    'france2': 'C4.api.telerama.fr', # France 2
+    'm6': 'C118.api.telerama.fr', # M6
+    'c8': 'C445.api.telerama.fr', # C8
+    'w9': 'C119.api.telerama.fr', # W9
+    'tmc': 'C195.api.telerama.fr', # TMC
+    'tfx': 'C446.api.telerama.fr', # TFX
+    'nrj12': 'C444.api.telerama.fr', # NRJ 12
+    'gulli': 'C482.api.telerama.fr', # Gulli
+    'tf1serie': 'C1404.api.telerama.fr', # TF1 Serie Film
+    '6ter': 'C1403.api.telerama.fr', # 6Ter
+}
 locale.setlocale(locale.LC_ALL, os.getenv('LC_ALL', 'fr_FR'))
 
 def fetch_xmltv():
@@ -59,7 +59,7 @@ def filter_program(channel_program: ET.Element):
     if (start_prog.hour == 20 and start_prog.minute < 40) or (start_prog.hour == 21 and start_prog.minute > 15):
         return False
     duration = (stop_prog - start_prog).total_seconds()/60
-    if duration < 36:
+    if duration < 20:
         return False
     if start_prog.day != NOW.day:
         return False
@@ -94,12 +94,12 @@ def process_channel_program(tree: ET.ElementTree, channel_id):
         programs.append(app_program)
     return programs
 
-def process_xmltv():
+def process_xmltv(target_channels):
     result = []
     tree = ET.parse('xmltv-tnt.xml')
     for ch_elem in tree.findall('channel'):
         channel_id = ch_elem.attrib['id']
-        if not channel_id in TARGET_CHANNELS:
+        if not channel_id in target_channels:
             continue
         channel = {
             'name': ch_elem.find('display-name').text,
@@ -155,16 +155,19 @@ def send_today_program(args, today_program):
 
 
 def fetch_program(args):
+    print(f'Fetch programs for {args.channels}')
+    target_channels = list(TARGET_CHANNELS[x] for x in args.channels)
     fetch_xmltv()
-    today_program = process_xmltv()
+    today_program = process_xmltv(target_channels)
     send_today_program(args, today_program)
 
 @app.route('/send', methods=['GET'])
 def send_program():
     args = Namespace(
-        force_refresh=bool(request.args.get('force', 'False')),
+        force_refresh=(request.args.get('force', 'False') == 'True'),
         webhook=os.getenv('PROGRAMME_TNT_SLACK_WEBHOOK'),
-        verbose=bool(os.getenv('PROGRAMME_TNT_VERBOSE'))
+        verbose=os.getenv('PROGRAMME_TNT_VERBOSE') == 'True',
+        channels=request.args.getlist('channels')
     )
     fetch_program(args)
     return json.dumps({'success': True})
@@ -172,7 +175,11 @@ def send_program():
 def server_program(args):
     os.environ['PROGRAMME_TNT_SLACK_WEBHOOK'] = args.webhook
     os.environ['PROGRAMME_TNT_VERBOSE'] = str(args.verbose)
-    app.run(host="0.0.0.0")
+    if args.expose:
+        app.run(host="0.0.0.0")
+    else:
+        app.run()
+    
 
 
 parser = ArgumentParser(prog='programme-tnt')
@@ -182,11 +189,13 @@ cli_parser = subparsers.add_parser('cli', help='cli version of programme-tnt')
 cli_parser.add_argument('-f', '--force-refresh', help="Force the refresh of programme tv database", action="store_true", default=False)
 cli_parser.add_argument('-w', '--webhook', help="Slack webhook to send program. Default env SLACK_WEBHOOK", default=os.getenv('SLACK_WEBHOOK'))
 cli_parser.add_argument('-v', '--verbose', help="Display many information like description", action="store_true", default=False)
+cli_parser.add_argument('-c', '--channels', nargs='+', help="Select specific channels. Default ALL available by app.", default=list(TARGET_CHANNELS.keys()))
 cli_parser.set_defaults(func=fetch_program)
 
 server_parser = subparsers.add_parser('server', help='server version of programme-tnt')
 server_parser.add_argument('-w', '--webhook', help="Slack webhook to send program. Default env SLACK_WEBHOOK", default=os.getenv('SLACK_WEBHOOK'))
 server_parser.add_argument('-v', '--verbose', help="Display many information like description", action="store_true", default=False)
+server_parser.add_argument('-e', '--expose', help="Expose the server", action="store_true", default=False)
 server_parser.set_defaults(func=server_program)
 
 def main(args):
