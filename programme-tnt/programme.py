@@ -172,7 +172,7 @@ def send_program():
 def server_program(args):
     os.environ['PROGRAMME_TNT_SLACK_WEBHOOK'] = args.webhook
     os.environ['PROGRAMME_TNT_VERBOSE'] = str(args.verbose)
-    app.run()
+    app.run(host="0.0.0.0")
 
 
 parser = ArgumentParser(prog='programme-tnt')
