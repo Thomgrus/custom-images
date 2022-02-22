@@ -157,6 +157,8 @@ def send_today_program(args, today_program):
 
 
 def fetch_program(args):
+    global NOW
+    NOW = pytz.timezone('Europe/Paris').localize(datetime.datetime.now())
     print(f'Fetch programs for {args.channels}')
     target_channels = list(TARGET_CHANNELS[x] for x in args.channels)
     fetch_xmltv()
