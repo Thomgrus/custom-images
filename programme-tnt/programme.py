@@ -143,9 +143,19 @@ def to_blocks(today_program, verbose):
         result.append({"type": "divider"})
     return result
 
+def to_texts(today_program):
+    channels_to_send = filter(lambda c: c['programs'], today_program)
+    if len(channels_to_send) == 0:
+        return ':tv: Rien pour ce soir'
+    res = ':tv:'
+    for channel in channels_to_send:
+        program = channel['programs'][0]
+        res += f' | {channel["name"]}: {program["title"]}'
+    return res
+
 def send_today_program(args, today_program):
     r = requests.post(args.webhook, json={
-        'text': 'Programme TV du jour',
+        'text': to_texts(today_program),
         'username': 'Programme TNT',
         'icon_emoji': ':tv:',
         'blocks': to_blocks(today_program, args.verbose)
