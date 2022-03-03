@@ -145,8 +145,6 @@ def to_blocks(today_program, verbose):
 
 def to_texts(today_program):
     channels_to_send = filter(lambda c: c['programs'], today_program)
-    if len(channels_to_send) == 0:
-        return ':tv: Rien pour ce soir'
     res = ':tv:'
     for channel in channels_to_send:
         program = channel['programs'][0]
