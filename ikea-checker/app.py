@@ -58,6 +58,7 @@ def ikea(args):
         send_delivery_to_slack(args.webhook, deliveries)
         print('🎊')
     else:
+        print('No delivery available')
         if not args.batch:
             exit(1)
 
