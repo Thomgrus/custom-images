@@ -11,21 +11,41 @@ locale.setlocale(locale.LC_ALL, os.getenv('LC_ALL', 'fr_FR'))
 constants = ikea_api.Constants(country="fr", language="fr")
 token = ikea_api.run(ikea_api.Auth(constants).get_guest_token())
 
-def to_blocks(deliveries):
-    result = []
+def to_blocks(deliveries, product):
+    result = [{
+                "type": "header",
+                "text": {
+                    "type": "plain_text",
+                    "text": ':muscle: Votre produit est disponible :'
+                }
+            }]
+    type_to_deliveries = { delivery.type : [] for delivery in deliveries }
     for delivery in deliveries:
-        result.append({
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": f'*{delivery.type}* -> *{delivery.service_provider}* ({delivery.date})'
-            }
-        })
+        type_to_deliveries[delivery.type].append(delivery)
+        
+    for type in type_to_deliveries:
+        for delivery in type_to_deliveries[type]:
+            result.append({
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f':star: *{delivery.type}* -> *{delivery.service_provider}* ({delivery.date})\n'
+                }
+            })
         result.append({"type": "divider"})
+    result.append({"type": "divider"})
+    product_link = f'https://www.ikea.com/fr/fr/catalog/products/{product}'
+    result.append({
+        "type": "section",
+        "text": {
+            "type": "mrkdwn",
+            "text": f'Vous pouvez vous rendre ici:\n{product_link}'
+        }
+    })
     return result
 
 
-def send_delivery_to_slack(webhook, deliveries):
+def send_delivery_to_slack(webhook, deliveries, product):
     if (not webhook):
         print('No webhook set: no notification sent.')
         return
@@ -33,7 +53,7 @@ def send_delivery_to_slack(webhook, deliveries):
         'text': 'Produit IKEA disponible !',
         'username': 'IKEA',
         'icon_emoji': ':white_check_mark:',
-        'blocks': to_blocks(deliveries)
+        'blocks': to_blocks(deliveries, product)
         })
     if r.status_code == 200:
         print('Successfully send to slack')
@@ -55,7 +75,7 @@ def ikea(args):
     for delivery in deliveries:
         print(f'{delivery.type} -> {delivery.service_provider} ({delivery.date})')
     if len(deliveries):
-        send_delivery_to_slack(args.webhook, deliveries)
+        send_delivery_to_slack(args.webhook, deliveries, args.product)
         print('🎊')
     else:
         print('No delivery available')
